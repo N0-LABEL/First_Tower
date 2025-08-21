@@ -397,7 +397,19 @@ async def send_prices(channel, liters=1, new_message=False, edit_message=False):
     except Exception as e:
         logger.error(f"Error sending prices message: {e}")
 
-
+def in_correct_text_channel():
+    """Проверка, что команда используется в нужном текстовом канале"""
+    async def predicate(interaction: discord.Interaction):
+        if interaction.channel_id == TEXT_CHANNEL_ID:
+            return True
+        await interaction.response.send_message(
+            f"❌ Эта команда доступна только в текстовом канале <#{TEXT_CHANNEL_ID}>!",
+            ephemeral=True
+        )
+        return False
+    return app_commands.check(predicate)
+    
+    
 # Removed auto-reconnection loop to prevent constant reconnection issues
 
 @tasks.loop(minutes=1)
@@ -417,6 +429,7 @@ async def midnight_task():
 
 @bot.tree.command(name="price", description="Узнать стоимость топлива на выбранное количество литров")
 @app_commands.describe(liters="Количество литров")
+@in_correct_text_channel()
 async def price(interaction: discord.Interaction, liters: float):
     """Slash command to get fuel prices"""
     if liters <= 0:
@@ -438,6 +451,7 @@ async def price(interaction: discord.Interaction, liters: float):
 
 
 @bot.tree.command(name="update", description="Принудительно обновить цены на топливо")
+@in_correct_text_channel()
 async def update_command(interaction: discord.Interaction):
     """Slash command to manually update prices"""
     await interaction.response.defer()
@@ -523,3 +537,4 @@ async def sync(ctx):
     except Exception as e:
         await ctx.send(f"Ошибка синхронизации: {e}")
         logger.error(f"Sync error: {e}")
+
